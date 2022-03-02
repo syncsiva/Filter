@@ -1,7 +1,14 @@
 ﻿using System.Linq.Expressions;
 using System.Dynamic;
+using System.Collections.Generic;
+using System.Linq;
+using System;
 
-namespace LambdaPerformance.Pages
+#if NET5_0
+namespace LambdaPerformance
+#else
+namespace LambdaPerformance
+#endif
 {
     public static class Filtering
     {
@@ -87,11 +94,11 @@ namespace LambdaPerformance.Pages
                 {
                     Condition = "and",
                     IsComplex = true,
-                    predicates = new List<WhereFilter>()
-        {
-                    this,
-                    predicate
-                }
+                    predicates = new List<WhereFilter>() 
+                    {
+                        this,
+                        predicate
+                    }
                 };
                 return combined;
             }
@@ -120,10 +127,10 @@ namespace LambdaPerformance.Pages
                     Condition = "or",
                     IsComplex = true,
                     predicates = new List<WhereFilter>()
-        {
-                    this,
-                    predicate
-                }
+                    {
+                        this,
+                        predicate
+                    }
                 };
                 return combined;
             }
@@ -140,16 +147,16 @@ namespace LambdaPerformance.Pages
                     Condition = "or",
                     IsComplex = true,
                     predicates = new List<WhereFilter>()
-        {
-                    this,
-                    predicate
-                }
+                    {
+                        this,
+                        predicate
+                    }
                 };
                 return combined;
             }
         }
 
-    
+
         public static IEnumerable<T> PerformFiltering<T>(IEnumerable<T> dataSource, List<WhereFilter> whereFilter, string condition)
         {
             return QueryPerformFiltering(dataSource.AsQueryable(), whereFilter, condition);
@@ -157,10 +164,11 @@ namespace LambdaPerformance.Pages
 
         public static IQueryable<T> QueryPerformFiltering<T>(IQueryable<T> dataSource, List<WhereFilter> whereFilter, string condition)
         {
-
             Type type = dataSource.ToList().GetType().GetGenericArguments()[0];
             ParameterExpression paramExpression = Expression.Parameter(type, type?.Name);
-            dataSource = dataSource.Where(Expression.Lambda<Func<T, bool>>(PredicateBuilder(dataSource, whereFilter ?? null, condition, paramExpression, type), paramExpression));
+            var exp = PredicateBuilder(dataSource, whereFilter ?? null, condition, paramExpression, type);
+            var lamda = Expression.Lambda<Func<T, bool>>(exp, paramExpression);
+            dataSource = dataSource.Where(lamda);
             return dataSource;
         }
 
